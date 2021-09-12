@@ -49,14 +49,14 @@ async def quote(context: commands.Context):
 
 @quote.command(name='get')
 async def _quote_get(context: commands.Context):
-    quote_got = database.get_random_quote()
+    quote_got = database.get_random_quote(context.guild.id)
     await context.send(quote_got)
 
 
 @quote.command(name='store')
 async def _quote_store(context: commands.Context, actual_quote: str, author: tp.Optional[str]):
     time = datetime.datetime.now().timestamp()
-    database.add_quote(actual_quote, author, time)
+    database.add_quote(actual_quote, author, context.guild.id, time)
     await context.send(
         f'Stored quote!\nTime: {datetime.datetime.fromtimestamp(time):%B %d, %Y %H:%M:%S}, Author: {author}, Quote: {actual_quote}')
 
@@ -72,13 +72,13 @@ async def ping(context: commands.Context):
 
 @client.command()
 async def ball(context: commands.Context):
-    database.add_affection(context.message.author.id, 1)
+    database.add_affection(context.message.author.id, 1, context.guild.id)
     await ping(context)
 
 
 @client.command()
 async def affection_list(context: commands.Context, n: int = 10):
-    top_affection: tp.List[tp.Dict[str, int]] = database.get_most_loved(n)
+    top_affection: tp.List[tp.Dict[str, int]] = database.get_most_loved(context.guild.id, n)
     relevant_users = [(await client.fetch_user(user_aff['user_id']), user_aff['affection']) for user_aff in
                       top_affection]
 
@@ -95,11 +95,11 @@ async def affection(context: commands.Context):
     id_to_use: int = message.mentions[0].id if len(message.mentions) > 0 else context.author.id
 
     try:
-        user_affection: int = database.get_affection(id_to_use)
+        user_affection: int = database.get_affection(id_to_use, context.guild.id)
     except TypeError:
         user_affection: int = 0
 
-    is_max_affection: bool = database.get_max_affection() == user_affection
+    is_max_affection: bool = database.get_max_affection(context.guild.id) == user_affection
     user: discord.User = message.mentions[0] if len(message.mentions) > 0 else context.author
     message: str = f'{user.mention} I LOVE YOU {user_affection} TIMES MORE THAN PETS!!!!!!'
     if is_max_affection:
@@ -114,7 +114,7 @@ async def hello(context: commands.Context):
 
 @client.command()
 async def pet(context: commands.Context, n_pets: int = 1):
-    database.add_affection(context.message.author.id, 3 * n_pets)
+    database.add_affection(context.message.author.id, 3 * n_pets, context.guild.id)
     await context.send(f'I LOVE PETS SO MUCH BUT NOT AS MUCH AS I LOVE YOU!!!!!!!!!!!')
 
 
@@ -164,13 +164,13 @@ async def handle_callout(message: discord.Message):
             if good_boy_match.group('question'):
                 await message.channel.send(random.choice(GOOD_BOY_QUESTION_RESPONSES))
             else:
-                database.add_affection(message.author.id, 2)
+                database.add_affection(message.author.id, 2, message.guild.id)
                 await message.channel.send(random.choice(GOOD_BOY_STATEMENT_RESPONSES))
         elif bad_dog_match:
-            database.add_affection(message.author.id, -1)
+            database.add_affection(message.author.id, -1, message.guild.id)
             await message.channel.send(random.choice(BAD_DOG_STATEMENT_RESPONSES))
         elif treat_match:
-            database.add_affection(message.author.id, 5)
+            database.add_affection(message.author.id, 5, message.guild.id)
             await message.channel.send(random.choice(TREAT_RESPONSES))
         else:
             await message.channel.send(random.choice(DEFAULT_RESPONSE))
@@ -194,11 +194,11 @@ async def on_message(message: discord.Message):
     else:
         # Send a random message every now and then.
         if random.random() < .05:
-            max_affection: int = database.get_max_affection()
-            user_affection: int = database.get_affection(message.author.id)
+            max_affection: int = database.get_max_affection(message.guild.id)
+            user_affection: int = database.get_affection(message.author.id, message.guild.id)
 
             # Corgi bot will say weird stuff to people he likes more.
-            if random.randint(max_affection // 2, int(max_affection * 3 / 2)) < user_affection:
+            if random.randint(max_affection // 10, int(max_affection * 5)) < user_affection:
                 await message.channel.send(random.choice(WEIRD_RESPONSES))
 
 
