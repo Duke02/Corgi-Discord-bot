@@ -1,15 +1,15 @@
-import discord
-import os.path
+import datetime
 import json
 import logging
-import typing as tp
+import os.path
 import random
-import datetime
-import quotes
 import re
+import typing as tp
+
+import discord
 from discord.ext import commands
 
-import relationship
+from database import Database
 
 PREFIX: str = '$'
 client: commands.Bot = commands.Bot(command_prefix=PREFIX)
@@ -28,12 +28,11 @@ def setup():
 
 setup()
 
-quotes_manager: quotes.QuotesDatabase = quotes.QuotesDatabase()
-affection_manager: relationship.RelationshipDatabase = relationship.RelationshipDatabase()
+database: Database = Database()
 
 
 @client.command()
-async def roll(context: commands.Context, die: str) -> tp.List[int]:
+async def roll(context: commands.Context, die: str) -> None:
     d_index: int = die.find('d')
     num_dice: int = int(die[:d_index])
     num_faces: int = int(die[d_index + 1:])
@@ -50,14 +49,14 @@ async def quote(context: commands.Context):
 
 @quote.command(name='get')
 async def _quote_get(context: commands.Context):
-    quote_got = quotes_manager.get_random_quote()
+    quote_got = database.get_random_quote()
     await context.send(quote_got)
 
 
 @quote.command(name='store')
 async def _quote_store(context: commands.Context, actual_quote: str, author: tp.Optional[str]):
     time = datetime.datetime.now().timestamp()
-    quotes_manager.add_quote(actual_quote, author, time)
+    database.add_quote(actual_quote, author, time)
     await context.send(
         f'Stored quote!\nTime: {datetime.datetime.fromtimestamp(time):%B %d, %Y %H:%M:%S}, Author: {author}, Quote: {actual_quote}')
 
@@ -73,8 +72,39 @@ async def ping(context: commands.Context):
 
 @client.command()
 async def ball(context: commands.Context):
-    affection_manager.add_affection(context.message.author.id, 1)
+    database.add_affection(context.message.author.id, 1)
     await ping(context)
+
+
+@client.command()
+async def affection_list(context: commands.Context, n: int = 10):
+    top_affection: tp.List[tp.Dict[str, int]] = database.get_most_loved(n)
+    relevant_users = [(await client.fetch_user(user_aff['user_id']), user_aff['affection']) for user_aff in
+                      top_affection]
+
+    relevant_users = [(user.mention, aff) for user, aff in relevant_users]
+
+    await context.send(
+        f'Top {n} most loved people... BY ME!!!\n' + '\n'.join([f'{k} : {v}' for k, v in relevant_users]))
+
+
+@client.command()
+async def affection(context: commands.Context):
+    message: discord.Message = context.message
+
+    id_to_use: int = message.mentions[0].id if len(message.mentions) > 0 else context.author.id
+
+    try:
+        user_affection: int = database.get_affection(id_to_use)
+    except TypeError:
+        user_affection: int = 0
+
+    is_max_affection: bool = database.get_max_affection() == user_affection
+    user: discord.User = message.mentions[0] if len(message.mentions) > 0 else context.author
+    message: str = f'{user.mention} I LOVE YOU {user_affection} TIMES MORE THAN PETS!!!!!!'
+    if is_max_affection:
+        message += '\n||Don\'t tell anyone but I love you the most!||'
+    await context.send(message)
 
 
 @client.command()
@@ -84,7 +114,7 @@ async def hello(context: commands.Context):
 
 @client.command()
 async def pet(context: commands.Context, n_pets: int = 1):
-    affection_manager.add_affection(context.message.author.id, 3 * n_pets)
+    database.add_affection(context.message.author.id, 3 * n_pets)
     await context.send(f'I LOVE PETS SO MUCH BUT NOT AS MUCH AS I LOVE YOU!!!!!!!!!!!')
 
 
@@ -124,9 +154,9 @@ WEIRD_RESPONSES: tp.List[str] = [
 async def handle_callout(message: discord.Message):
     # Only the bot was mentioned
     if len(message.mentions) == 1:
-        good_boy: re.Pattern = re.compile(r'good (?:boy|dog)\s*(?P<question>\?)?')
-        bad_dog: re.Pattern = re.compile(r'bad dog!?')
-        treat: re.Pattern = re.compile(r'treat\??')
+        good_boy: re.Pattern = re.compile(r'good (?:boy|dog)\s*(?P<question>\?)?', re.IGNORECASE)
+        bad_dog: re.Pattern = re.compile(r'bad dog!?', re.IGNORECASE)
+        treat: re.Pattern = re.compile(r'treat\??', re.IGNORECASE)
         good_boy_match: re.Match = good_boy.search(message.content)
         bad_dog_match: re.Match = bad_dog.search(message.content)
         treat_match: re.Match = treat.search(message.content)
@@ -134,13 +164,13 @@ async def handle_callout(message: discord.Message):
             if good_boy_match.group('question'):
                 await message.channel.send(random.choice(GOOD_BOY_QUESTION_RESPONSES))
             else:
-                affection_manager.add_affection(message.author.id, 2)
+                database.add_affection(message.author.id, 2)
                 await message.channel.send(random.choice(GOOD_BOY_STATEMENT_RESPONSES))
         elif bad_dog_match:
-            affection_manager.add_affection(message.author.id, -1)
+            database.add_affection(message.author.id, -1)
             await message.channel.send(random.choice(BAD_DOG_STATEMENT_RESPONSES))
         elif treat_match:
-            affection_manager.add_affection(message.author.id, 5)
+            database.add_affection(message.author.id, 5)
             await message.channel.send(random.choice(TREAT_RESPONSES))
         else:
             await message.channel.send(random.choice(DEFAULT_RESPONSE))
@@ -163,9 +193,14 @@ async def on_message(message: discord.Message):
         await handle_callout(message)
     else:
         # Send a random message every now and then.
-        if random.random() < .02:
-            await message.channel.send(random.choice(WEIRD_RESPONSES))
-            return
+        if random.random() < .05:
+            max_affection: int = database.get_max_affection()
+            user_affection: int = database.get_affection(message.author.id)
+
+            # Corgi bot will say weird stuff to people he likes more.
+            if random.randint(max_affection // 2, int(max_affection * 3 / 2)) < user_affection:
+                await message.channel.send(random.choice(WEIRD_RESPONSES))
+
 
 #
 # @client.listen('on_command_error')
