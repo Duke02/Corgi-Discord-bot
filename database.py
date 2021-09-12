@@ -50,7 +50,7 @@ class Database:
             with closing(connection.cursor()) as cursor:
                 cursor.execute(
                     f'select * from {self.quotes_table_name} where {self.server_id_column} = ? order by random() limit 1;',
-                    server_id)
+                    [server_id])
                 quote = cursor.fetchone()
                 return f'{dt.datetime.fromtimestamp(float(quote[2])):%B %d, %Y %H:%M:%S}: {quote[1]} said, "{quote[0]}"'
 
