@@ -100,6 +100,8 @@ class Database:
                     f'select {self.affection_column} from {self.relation_table_name} where {self.user_id_column} = ? and {self.server_id_column} = ? limit 1',
                     [user_id, server_id])
                 row = cursor.fetchone()
+                if row is None:
+                    return 0
                 affection: int = row[0]
                 return affection
 
