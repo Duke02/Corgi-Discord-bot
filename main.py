@@ -31,6 +31,10 @@ setup()
 database: Database = Database()
 
 
+# data_mngr: data_manager.DataManager = data_manager.DataManager(client, database)
+# client.add_listener(data_mngr.tally_message, 'on_message')
+
+
 @client.command()
 async def roll(context: commands.Context, die: str) -> None:
     d_index: int = die.find('d')
@@ -82,7 +86,7 @@ async def affection_list(context: commands.Context, n: int = 10):
     relevant_users = [(await client.fetch_user(user_aff['user_id']), user_aff['affection']) for user_aff in
                       top_affection]
 
-    relevant_users = [(user.mention, aff) for user, aff in relevant_users]
+    relevant_users = [(user.display_name, aff) for user, aff in relevant_users]
 
     await context.send(
         f'Top {n} most loved people... BY ME!!!\n' + '\n'.join([f'{k} : {v}' for k, v in relevant_users]))
@@ -112,10 +116,45 @@ async def hello(context: commands.Context):
     await context.send(f'Hello there {context.message.author.mention}!!! Will you give me pets?????')
 
 
+def anti_cheat_limit(n: int, limit: int, affection_per: int, positive_message: str, neutral_message: str,
+                     negative_message: str) -> tp.Tuple[int, str]:
+    if n <= limit:
+        return affection_per * n, positive_message
+    elif limit < n <= (limit * 10):
+        return affection_per * limit, neutral_message
+    else:
+        return - affection_per * n // limit + affection_per * limit, negative_message
+
+
 @client.command()
 async def pet(context: commands.Context, n_pets: int = 1):
-    database.add_affection(context.message.author.id, 3 * n_pets, context.guild.id)
-    await context.send(f'I LOVE PETS SO MUCH BUT NOT AS MUCH AS I LOVE YOU!!!!!!!!!!!')
+    delta, message = anti_cheat_limit(n_pets, 7, 3, 'I LOVE PETS SO MUCH BUT NOT AS MUCH AS I LOVE YOU!!!!!!!!!!!',
+                                      'Hey you have a lot of hands for a hooman...\nBUT OK!',
+                                      "Foolish mortal. Your abuses of physics and anatomy have become entirely too apparent to my omniscient being. Prepare to be punished.")
+    database.add_affection(context.message.author.id, delta, context.guild.id)
+    await context.send(message)
+
+
+@client.command()
+async def treat(context: commands.Context, n_snackies: int = 1):
+    delta, message = anti_cheat_limit(n_snackies, 10, 5, f"SNACKIES I LOVE THME SO ,MUCH!!!!!!!!!",
+                                      "Oof I may be gaining some weight... \nBUT TREATS ARE WORTH IT",
+                                      "How dare you make me 1,153,482 lbs?!!!!!! I'm a corgi!!!!!1")
+    database.add_affection(context.message.author.id, delta, context.guild.id)
+    await context.send(message)
+
+
+@client.command()
+async def speak(context: commands.Context):
+    choices: tp.List[str] = ["Arf!", "BARK!", "RUFF!", "WOOF!"] * 4 + [
+        "You may not think so, but you need to be cherished almost as much as I cherish you."]
+    await context.send(random.choice(choices))
+
+
+@client.command()
+async def belly_rubs(context: commands.Context):
+    database.add_affection(context.author.id, 7, context.guild.id)
+    await context.send("BELLY RUBS ARE MY FAVORITE OH MY DOGGO!!!!!")
 
 
 GOOD_BOY_QUESTION_RESPONSES: tp.List[str] = ["Me! I'm a good boy!", "Am I a good boy?", "What defines good?",
@@ -193,12 +232,12 @@ async def on_message(message: discord.Message):
         await handle_callout(message)
     else:
         # Send a random message every now and then.
-        if random.random() < .05:
+        if random.random() < .15:
             max_affection: int = database.get_max_affection(message.guild.id)
             user_affection: int = database.get_affection(message.author.id, message.guild.id)
 
             # Corgi bot will say weird stuff to people he likes more.
-            if random.randint(max_affection // 10, int(max_affection * 5)) < user_affection:
+            if random.randint(max_affection // 10, int(max_affection * 2) + 7) < user_affection:
                 await message.channel.send(random.choice(WEIRD_RESPONSES))
 
 
