@@ -89,8 +89,7 @@ class PlaylistManager(commands.Cog, name='Playlist Manager'):
         all_tracks_to_add: typing.List[str] = found_matches['track']
 
         for album_id in found_matches['album']:
-            album_tracks: typing.List[typing.Dict] = self.spotify_client.album_tracks(album_id=album_id)['tracks'][
-                'items']
+            album_tracks: typing.List[typing.Dict] = self.spotify_client.album_tracks(album_id=album_id)['items']
             track_ids: typing.List[str] = list(map(lambda track: track['id'], album_tracks))
             all_tracks_to_add.extend(track_ids)
 
