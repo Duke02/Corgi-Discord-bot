@@ -9,6 +9,7 @@ import typing as tp
 import discord
 from discord.ext import commands
 
+import playlist_manager
 from database import Database
 
 PREFIX: str = '$'
@@ -256,4 +257,9 @@ if __name__ == '__main__':
     logger.info('Loaded credentials!')
 
     logger.info('Starting client...')
+
+    spotify_cog: playlist_manager.PlaylistManager = playlist_manager.PlaylistManager(client)
+
+    client.add_cog(spotify_cog)
+
     client.run(credentials['token'])
