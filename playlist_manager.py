@@ -94,9 +94,13 @@ class PlaylistManager(commands.Cog, name='Playlist Manager'):
             all_tracks_to_add.extend(track_ids)
 
         for playlist_id in found_matches['playlist']:
-            playlist_tracks: typing.List[typing.Dict] = self.spotify_client.playlist_items(playlist_id=playlist_id,
-                                                                                           fields='items(track(id))')[
-                'items']
+            response: typing.Dict = self.spotify_client.playlist_items(playlist_id=playlist_id)
+            playlist_tracks: typing.List[typing.Dict] = response['items']
+
+            while response['next']:
+                response = self.spotify_client.next(response)
+                playlist_tracks.extend(response['items'])
+
             track_ids: typing.List[str] = list(map(lambda track: track['track']['id'], playlist_tracks))
             all_tracks_to_add.extend(track_ids)
 
@@ -114,9 +118,18 @@ class PlaylistManager(commands.Cog, name='Playlist Manager'):
         # Make sure we're not adding duplicate tracks.
         all_tracks_to_add: typing.List[str] = list(set(all_tracks_to_add) - set(current_tracks))
 
-        if len(all_tracks_to_add) > 0:
+        n_tracks_to_add: int = len(all_tracks_to_add)
+
+        # Add tracks in batches of 100.
+        while len(all_tracks_to_add) > 0:
+            current_batch: typing.List[str] = all_tracks_to_add[:100]
             self.spotify_client.playlist_add_items(playlist_id=self.id_of_playlist_to_create,
-                                                   items=set(all_tracks_to_add))
+                                                   items=current_batch)
+            all_tracks_to_add = list(set(all_tracks_to_add) - set(current_batch))
+
+        if n_tracks_to_add > 0:
+            await message.channel.send(
+                f'I ADDED {n_tracks_to_add} SONGS TO THE SPOTIFY PLAYLIST!!!!! DO `{self.bot.command_prefix}playlist` TO GET A LINK! dO I GET TREATS NOW?????////')
 
     @commands.group(name='playlist')
     async def _parent_playlist_command(self, context: commands.Context):
@@ -125,10 +138,17 @@ class PlaylistManager(commands.Cog, name='Playlist Manager'):
 
     @_parent_playlist_command.command(name='enable')
     async def enable_playlist(self, context: commands.Context, playlist_name: str):
+        if not context.author.guild_permissions.administrator:
+            await context.send(f'You bit off more than you can chew pardner...\nWANNA GRAB A BIG STICK WITH ME')
+            return
+
+        if not self.is_enabled and os.path.exists(self.saved_playlist_path):
+            await self.setup_music_channel()
+
         if self.is_enabled or not self.can_work:
             await self.give_playlist_link(context, message=f'Sorry! But the Playlist Manager has already been'
                                                            ' enabled! You can find the playlist here')
-            pass
+            return
 
         self.music_channel: discord.TextChannel = context.channel
         response: typing.Dict = self.spotify_client.user_playlist_create(user=self.user_id, name=playlist_name,
