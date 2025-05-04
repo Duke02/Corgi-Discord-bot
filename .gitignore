@@ -5,3 +5,5 @@ db/*
 uv.lock
 .venv
 __pycache__
+.env
+credentials.json
