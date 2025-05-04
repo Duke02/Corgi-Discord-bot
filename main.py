@@ -5,6 +5,11 @@ import os.path
 import random
 import re
 import typing as tp
+import os 
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import discord
 from discord.ext import commands
@@ -13,7 +18,14 @@ import playlist_manager
 from database import Database
 
 PREFIX: str = '$'
-client: commands.Bot = commands.Bot(command_prefix=PREFIX)
+intents = discord.Intents.default()
+intents.message_content = True 
+intents.messages = True 
+intents.reactions = True 
+intents.guild_messages = True 
+intents.guild_reactions = True 
+
+client: commands.Bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
 logger: logging.Logger = logging.getLogger('discord')
 
@@ -252,8 +264,8 @@ if __name__ == '__main__':
     print('Running...')
     setup()
     logger.info('Loading credentials...')
-    with open(os.path.join('assets', 'credentials.json'), 'r') as f:
-        credentials = json.load(f)
+    # with open(os.path.join('assets', 'credentials.json'), 'r') as f:
+    #     credentials = json.load(f)
     logger.info('Loaded credentials!')
 
     logger.info('Starting client...')
@@ -262,4 +274,5 @@ if __name__ == '__main__':
 
     client.add_cog(spotify_cog)
 
-    client.run(credentials['token'])
+    # client.run(credentials['token'])
+    client.run(os.getenv('DISCORD_TOKEN'))
