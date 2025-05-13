@@ -7,17 +7,21 @@ import typing as tp
 import os
 from pathlib import Path
 
+from time import sleep
+
+sleep(10)
+
 from dotenv import load_dotenv
 
-from utils import get_logs_directory
+from corgi_bot.utils import get_logs_directory
 
 load_dotenv()
 
 import discord
 from discord.ext import commands
 
-import playlist_manager
-from database import Database
+from corgi_bot import playlist_manager
+from corgi_bot.database import Database
 
 PREFIX: str = '$'
 intents = discord.Intents.default()
@@ -34,6 +38,8 @@ logger: logging.Logger = logging.getLogger('discord')
 
 def setup():
     logging_filename: Path = get_logs_directory() / f'{datetime.datetime.now():%Y%m%d_%H%M%S%f}.log'
+
+    print(f'[{logging_filename=}]')
 
     logger.setLevel(logging.INFO)
     handler = logging.FileHandler(filename=logging_filename, encoding='utf-8', mode='w')

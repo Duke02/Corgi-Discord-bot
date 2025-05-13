@@ -7,7 +7,7 @@ from contextlib import closing
 import discord
 import discord.ext.commands
 
-import database
+import corgi_bot.database as database
 
 
 class DataManager:

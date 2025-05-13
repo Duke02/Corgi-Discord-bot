@@ -6,7 +6,7 @@ import typing as tp
 from contextlib import closing
 from pathlib import Path
 
-from utils import get_db_directory
+from corgi_bot.utils import get_db_directory
 
 
 class Database:
