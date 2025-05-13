@@ -4,12 +4,15 @@ import os.path
 import sqlite3
 import typing as tp
 from contextlib import closing
+from pathlib import Path
+
+from utils import get_db_directory
 
 
 class Database:
     def __init__(self):
         self.logger = logging.getLogger('discord')
-        self.connection_url: str = os.path.abspath(os.path.join('db', 'corgi.db'))
+        self.connection_url: Path = get_db_directory() / 'corgi.db'  # os.path.abspath(os.path.join('db', 'corgi.db'))
 
         self.server_id_column: str = 'server_id'
 

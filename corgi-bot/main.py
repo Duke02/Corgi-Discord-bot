@@ -1,13 +1,15 @@
 import datetime
 import json
 import logging
-import os.path
 import random
 import re
 import typing as tp
-import os 
+import os
+from pathlib import Path
 
 from dotenv import load_dotenv
+
+from utils import get_logs_directory
 
 load_dotenv()
 
@@ -31,7 +33,7 @@ logger: logging.Logger = logging.getLogger('discord')
 
 
 def setup():
-    logging_filename: str = os.path.join('logs', f'{datetime.datetime.utcnow():%Y%m%d_%H%M%S%f}.log')
+    logging_filename: Path = get_logs_directory() / f'{datetime.datetime.now():%Y%m%d_%H%M%S%f}.log'
 
     logger.setLevel(logging.INFO)
     handler = logging.FileHandler(filename=logging_filename, encoding='utf-8', mode='w')
