@@ -5,10 +5,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin
 WORKDIR /app
 
 RUN mkdir /app/logs
+RUN mkdir /app/db
 
 COPY uv.lock .
 COPY pyproject.toml . 
-
 
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_HTTP_TIMEOUT=1000
