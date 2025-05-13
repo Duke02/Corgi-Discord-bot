@@ -6,6 +6,7 @@ WORKDIR /app
 
 RUN mkdir /app/logs
 RUN mkdir /app/db
+RUN mkdir /app/corgi_bot
 
 COPY uv.lock .
 COPY pyproject.toml . 
@@ -14,9 +15,6 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_HTTP_TIMEOUT=1000
 RUN uv sync --native-tls
 
-COPY corgi-bot/main.py .
-COPY corgi-bot/playlist_manager.py .
-COPY corgi-bot/database.py .
-COPY corgi-bot/data_manager.py .
+COPY corgi_bot/*.py corgi_bot/
 COPY .env .
-CMD ["uv", "run", "--native-tls", "python", "-m", "main"]
+CMD ["uv", "run", "--native-tls", "python", "-m", "corgi_bot.main"]
