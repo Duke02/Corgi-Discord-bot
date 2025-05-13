@@ -20,11 +20,19 @@ class Database:
         self.quote_column_name: str = 'quote'
         self.author_column_name: str = 'author'
         self.time_column_name: str = 'time'
+        self._create_table(self.quotes_table_name, [self.quote_column_name, self.author_column_name, self.time_column_name, self.server_id_column], ['TEXT', 'TEXT', 'TEXT', 'TEXT'])
 
         self.relation_table_name: str = 'relations'
         self.user_id_column = 'user_id'
         self.affection_column = 'affection'
         self.updated_time_column = 'last_update'
+
+        self._create_table(self.relation_table_name, [self.user_id_column, self.affection_column, self.updated_time_column, self.server_id_column], ['TEXT', 'NUM', 'TEXT', 'TEXT'])
+
+
+    def _create_table(self, table_name: str, cols: list[str], dtypes: list[str]):
+        col_def: str = ', '.join([f'{col} {dtype}' for col, dtype in zip(cols, dtypes)])
+        self.get_connection().execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({col_def});')
 
     def get_connection(self):
         try:

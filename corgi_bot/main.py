@@ -89,7 +89,7 @@ async def _quote_store(context: commands.Context, actual_quote: str, author: tp.
 @client.command()
 async def ping(context: commands.Context):
     sent_time = context.message.created_at
-    current_time = datetime.datetime.now()
+    current_time = datetime.datetime.now().astimezone(datetime.timezone.utc)
 
     await context.send(
         f'I BROUGHT THE BALL BACK IN {(current_time - sent_time).microseconds / 1e3}MS! DO I GET A TREAT?')
