@@ -14,9 +14,9 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_HTTP_TIMEOUT=1000
 RUN uv sync --native-tls
 
-COPY main.py .
-COPY playlist_manager.py .
-COPY database.py .
-COPY data_manager.py .
+COPY corgi-bot/main.py .
+COPY corgi-bot/playlist_manager.py .
+COPY corgi-bot/database.py .
+COPY corgi-bot/data_manager.py .
 COPY .env .
 CMD ["uv", "run", "--native-tls", "python", "-m", "main"]
