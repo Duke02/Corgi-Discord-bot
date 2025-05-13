@@ -1,3 +1,9 @@
 assets/*
 logs/*
 db/*
+.python-version
+uv.lock
+.venv
+__pycache__
+.env
+credentials.json
