@@ -222,7 +222,7 @@ async def apologize(context: commands.Context):
     if forgiven:
         database.reset_affection(context.author.id, context.guild.id)
         await context.send('AWWW I COULD NEVER STAY MAD AT YOU!! I LOVE YOU <3 LET\'S GO FOR WALKIES!!!!')
-    elif (sample - chance) > (1 - 1e-12):
+    elif (sample - chance) > 0.99:
         await context.send(
             'YOUR SINS HAVE BEEN TOO MONUMENTAL FOR ME TO EVER FORGIVE YOU. YOU MUST PERISH BY THE BLADE FOR YOUR UTTER CONTEMPT OF MY TRUE SELF.')
     else:
