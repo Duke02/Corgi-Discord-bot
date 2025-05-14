@@ -6,9 +6,6 @@ import random
 import re
 import typing as tp
 from pathlib import Path
-from time import sleep
-
-sleep(10)
 
 from dotenv import load_dotenv
 
