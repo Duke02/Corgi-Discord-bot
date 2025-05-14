@@ -1,12 +1,10 @@
 import datetime
-import json
 import logging
+import os
 import random
 import re
 import typing as tp
-import os
 from pathlib import Path
-
 from time import sleep
 
 sleep(10)
@@ -58,6 +56,10 @@ database: Database = Database()
 
 @client.command()
 async def roll(context: commands.Context, die: str) -> None:
+    """
+    Roll some dice with something like 3d6
+    :param die: A string in the format of NdS where N is the # of dice to roll, S is the number of sides per die.
+    """
     d_index: int = die.find('d')
     num_dice: int = int(die[:d_index])
     num_faces: int = int(die[d_index + 1:])
@@ -68,18 +70,29 @@ async def roll(context: commands.Context, die: str) -> None:
 
 @client.group()
 async def quote(context: commands.Context):
+    """
+    Gets a random quote that's been saved.
+    """
     if context.invoked_subcommand is None:
         await _quote_get(context)
 
 
 @quote.command(name='get')
 async def _quote_get(context: commands.Context):
+    """
+    Gets a random quote that's been saved.
+    """
     quote_got = database.get_random_quote(context.guild.id)
     await context.send(quote_got)
 
 
 @quote.command(name='store')
 async def _quote_store(context: commands.Context, actual_quote: str, author: tp.Optional[str]):
+    """
+    Run with `quote store "<the quote>" [author name]`
+    :param actual_quote: The quote to store. Use "'s to do multiple words.
+    :param author: (Optional) The person that said the quote. Use "'s for multiple name parts(???)
+    """
     time = datetime.datetime.now().timestamp()
     database.add_quote(actual_quote, author, context.guild.id, time)
     await context.send(
@@ -88,6 +101,9 @@ async def _quote_store(context: commands.Context, actual_quote: str, author: tp.
 
 @client.command()
 async def ping(context: commands.Context):
+    """
+    Ping! Pong!
+    """
     sent_time = context.message.created_at
     current_time = datetime.datetime.now().astimezone(datetime.timezone.utc)
 
@@ -97,12 +113,19 @@ async def ping(context: commands.Context):
 
 @client.command()
 async def ball(context: commands.Context):
+    """
+    Throw the ball for Corgi Bot!
+    """
     database.add_affection(context.message.author.id, 1, context.guild.id)
     await ping(context)
 
 
 @client.command()
 async def affection_list(context: commands.Context, n: int = 10):
+    """
+    List out who loves Corgi Bot the best!
+    :param n: The number of people in the list. (Default is 10)
+    """
     top_affection: tp.List[tp.Dict[str, int]] = database.get_most_loved(context.guild.id, n)
     relevant_users = [(await client.fetch_user(user_aff['user_id']), user_aff['affection']) for user_aff in
                       top_affection]
@@ -115,6 +138,9 @@ async def affection_list(context: commands.Context, n: int = 10):
 
 @client.command()
 async def affection(context: commands.Context):
+    """
+    Figure out how much Corgi Bot loves you (or someone else if you tag them)
+    """
     message: discord.Message = context.message
 
     id_to_use: int = message.mentions[0].id if len(message.mentions) > 0 else context.author.id
@@ -134,6 +160,9 @@ async def affection(context: commands.Context):
 
 @client.command()
 async def hello(context: commands.Context):
+    """
+    Say hi to Corgi Bot!
+    """
     await context.send(f'Hello there {context.message.author.mention}!!! Will you give me pets?????')
 
 
@@ -149,6 +178,10 @@ def anti_cheat_limit(n: int, limit: int, affection_per: int, positive_message: s
 
 @client.command()
 async def pet(context: commands.Context, n_pets: int = 1):
+    """
+    Pet Corgi Bot a number of times!
+    :param n_pets: How many times you want to pet Corgi Bot (Optional, default is 1)
+    """
     delta, message = anti_cheat_limit(n_pets, 7, 3, 'I LOVE PETS SO MUCH BUT NOT AS MUCH AS I LOVE YOU!!!!!!!!!!!',
                                       'Hey you have a lot of hands for a hooman...\nBUT OK!',
                                       "Foolish mortal. Your abuses of physics and anatomy have become entirely too apparent to my omniscient being. Prepare to be punished.")
@@ -158,6 +191,10 @@ async def pet(context: commands.Context, n_pets: int = 1):
 
 @client.command()
 async def treat(context: commands.Context, n_snackies: int = 1):
+    """
+    Give Corgi Bot a bunch of snackies!!!!
+    :param n_snackies: The number of SNACKIES(!!!) you want to give Corgi Bot (Optional, default is 1)
+    """
     delta, message = anti_cheat_limit(n_snackies, 10, 5, f"SNACKIES I LOVE THME SO ,MUCH!!!!!!!!!",
                                       "Oof I may be gaining some weight... \nBUT TREATS ARE WORTH IT",
                                       "How dare you make me 1,153,482 lbs?!!!!!! I'm a corgi!!!!!1")
@@ -167,6 +204,9 @@ async def treat(context: commands.Context, n_snackies: int = 1):
 
 @client.command()
 async def speak(context: commands.Context):
+    """
+    Tell Corgi Bot to Speak!
+    """
     choices: tp.List[str] = ["Arf!", "BARK!", "RUFF!", "WOOF!"] * 4 + [
         "You may not think so, but you need to be cherished almost as much as I cherish you."]
     await context.send(random.choice(choices))
@@ -174,6 +214,9 @@ async def speak(context: commands.Context):
 
 @client.command()
 async def belly_rubs(context: commands.Context):
+    """
+    Give Corgi Bot Belly Rubs!
+    """
     database.add_affection(context.author.id, 7, context.guild.id)
     await context.send("BELLY RUBS ARE MY FAVORITE OH MY DOGGO!!!!!")
 
