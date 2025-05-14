@@ -1,5 +1,6 @@
 import datetime
 import logging
+import math
 import os
 import random
 import re
@@ -200,6 +201,36 @@ async def treat(context: commands.Context, n_snackies: int = 1):
                                       "How dare you make me 1,153,482 lbs?!!!!!! I'm a corgi!!!!!1")
     database.add_affection(context.message.author.id, delta, context.guild.id)
     await context.send(message)
+
+
+@client.command()
+async def apologize(context: commands.Context):
+    """
+    Did you piss off Corgi Bot? Apologize and maybe he'll forgive you.
+    """
+    user_affection: int = database.get_affection(context.author.id, context.guild.id)
+
+    if user_affection >= 0:
+        await context.send("WHY FORGIVE??? I LOVE YOU AND ALWAYS HAVE :)")
+        return
+
+    max_affection: int = database.get_max_affection(context.guild.id)
+    chance: float = math.sqrt(abs(user_affection)) / max_affection
+    if chance > 1:
+        # No greater sin has been commited than to be more hated than the most loved.
+        chance = 1e-16
+    sample: float = random.random()
+    forgiven: bool = sample < chance
+
+    if forgiven:
+        database.reset_affection(context.author.id, context.guild.id)
+        await context.send('AWWW I COULD NEVER STAY MAD AT YOU!! I LOVE YOU <3 LET\'S GO FOR WALKIES!!!!')
+    elif (sample - chance) > (1 - 1e-12):
+        await context.send(
+            'YOUR SINS HAVE BEEN TOO MONUMENTAL FOR ME TO EVER FORGIVE YOU. YOU MUST PERISH BY THE BLADE FOR YOUR UTTER CONTEMPT OF MY TRUE SELF.')
+    else:
+        await context.send('NO! I\'m still mad >:(')
+
 
 
 @client.command()

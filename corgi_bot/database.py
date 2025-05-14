@@ -1,6 +1,5 @@
 import datetime as dt
 import logging
-import os.path
 import sqlite3
 import typing as tp
 from contextlib import closing
@@ -20,15 +19,18 @@ class Database:
         self.quote_column_name: str = 'quote'
         self.author_column_name: str = 'author'
         self.time_column_name: str = 'time'
-        self._create_table(self.quotes_table_name, [self.quote_column_name, self.author_column_name, self.time_column_name, self.server_id_column], ['TEXT', 'TEXT', 'TEXT', 'TEXT'])
+        self._create_table(self.quotes_table_name,
+                           [self.quote_column_name, self.author_column_name, self.time_column_name,
+                            self.server_id_column], ['TEXT', 'TEXT', 'TEXT', 'TEXT'])
 
         self.relation_table_name: str = 'relations'
         self.user_id_column = 'user_id'
         self.affection_column = 'affection'
         self.updated_time_column = 'last_update'
 
-        self._create_table(self.relation_table_name, [self.user_id_column, self.affection_column, self.updated_time_column, self.server_id_column], ['TEXT', 'NUM', 'TEXT', 'TEXT'])
-
+        self._create_table(self.relation_table_name,
+                           [self.user_id_column, self.affection_column, self.updated_time_column,
+                            self.server_id_column], ['TEXT', 'NUM', 'TEXT', 'TEXT'])
 
     def _create_table(self, table_name: str, cols: list[str], dtypes: list[str]):
         col_def: str = ', '.join([f'{col} {dtype}' for col, dtype in zip(cols, dtypes)])
@@ -115,6 +117,13 @@ class Database:
                     return 0
                 affection: int = row[0]
                 return affection
+
+    def reset_affection(self, user_id: int, server_id: int):
+        with closing(self.get_connection()) as connection:
+            with closing(connection.cursor()) as cursor:
+                cursor.execute(
+                    f'update {self.relation_table_name} set {self.affection_column} = ? where {self.user_id_column} = ? and {self.server_id_column} = ? limit 1',
+                    [0, user_id, server_id])
 
     def get_max_affection(self, server_id: int) -> int:
         with closing(self.get_connection()) as connection:
